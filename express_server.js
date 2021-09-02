@@ -49,7 +49,7 @@ app.post("/urls", (req, res) => {
   let shortURL = generateRandomString();
   let longURL = req.body.longURL;
   urlDatabase[shortURL] = longURL;
-  res.redirect(`/urls/:${shortURL}`)
+  res.redirect(`/urls/${shortURL}`)
 });
 
 // post request to delete a URL
@@ -61,7 +61,10 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 
 // show page for a shortened URL
 app.get("/urls/:shortURL", (req, res) => {
-  const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
+  const templateVars = { 
+    shortURL: req.params.shortURL, 
+    longURL: urlDatabase[req.params.shortURL] 
+  };
   res.render("urls_show", templateVars);
 });
 
