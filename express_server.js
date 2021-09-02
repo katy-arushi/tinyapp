@@ -18,15 +18,16 @@ function generateRandomString() { // generate random string for short URL
 const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({extended: true}));
 
-
-
-// HTTP ROUTES
-
 // object to store all urls
 const urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
   "9sm5xK": "http://www.google.com"
 };
+
+
+// HTTP ROUTES
+
+// GET REQUESTS
 
 // home page
 app.get("/", (req, res) => {
@@ -42,21 +43,6 @@ app.get("/urls", (req, res) => {
 // submit a new URL - get request for input form
 app.get("/urls/new", (req, res) => {
   res.render("urls_new");
-});
-
-// submit form - post data and redirect
-app.post("/urls", (req, res) => {
-  let shortURL = generateRandomString();
-  let longURL = req.body.longURL;
-  urlDatabase[shortURL] = longURL;
-  res.redirect(`/urls/${shortURL}`)
-});
-
-// post request to delete a URL
-app.post("/urls/:shortURL/delete", (req, res) => {
-  const url = req.params.shortURL
-  delete urlDatabase[url]
-  res.redirect("/urls")
 });
 
 // show page for a shortened URL
@@ -81,6 +67,35 @@ res.redirect(longURL);
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
+
+
+
+// POST REQUESTS
+
+// submit form to add URL - post data and redirect to URLs home
+app.post("/urls", (req, res) => {
+  const shortURL = generateRandomString();
+  const longURL = req.body.longURL;
+  urlDatabase[shortURL] = longURL;
+  res.redirect(`/urls/${shortURL}`)
+});
+
+// post request to delete a URL
+app.post("/urls/:shortURL/delete", (req, res) => {
+  const shortURL = req.params.shortURL
+  delete urlDatabase[shortURL]
+  res.redirect("/urls")
+});
+
+// post request to edit URL
+app.post("urls/:shortURL", (req, res) => {
+  console.log(req.body)
+  const shortURL = req.params.shortURL;
+  const longURL = req.body.longURL;
+  urlDatabase[shortURL] = longURL
+  res.redirect("/urls/");
+});
+
 
 app.listen(PORT, () => {
   console.log(`TinyApp server running on PORT ${PORT}!`);
