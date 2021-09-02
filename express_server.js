@@ -2,6 +2,8 @@ const express = require("express");
 const app = express();
 const PORT = 8080; // default port 8080
 
+app.set("view engine", "ejs"); 
+
 function generateRandomString() { // generate random string for short URL
   let result = '';
   let characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -12,11 +14,11 @@ function generateRandomString() { // generate random string for short URL
   return result;
 }
 
-app.set("view engine", "ejs"); 
-
 //middleware - needed for POST requests
 const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({extended: true}));
+
+
 
 // HTTP ROUTES
 
@@ -28,7 +30,7 @@ const urlDatabase = {
 
 // home page
 app.get("/", (req, res) => {
-  res.send("Hello!");
+  res.send("<html><h1>Hello! Welcome to the TinyApp URL Shortening Service!</h1></html>");
 });
 
 // display all URLs that have been shortened, in database obj
@@ -57,9 +59,12 @@ app.get("/urls/:shortURL", (req, res) => {
 });
 
 // redirect short URLs to long URLs
-app.get("/u/:shortURL", (req, res) => {
+app.get('/u/:shortURL', (req, res) => {
   const longURL = urlDatabase[req.params.shortURL]
-  res.redirect(longURL);
+  if (!urlDatabase[req.params.shortURL]) {
+    return res.status(404).send("Error, please check your shortened URL");
+ }
+res.redirect(longURL);
 });
 
 // show all URLs stored in database
@@ -68,5 +73,5 @@ app.get("/urls.json", (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Example app listening on port ${PORT}!`);
+  console.log(`TinyApp server running on PORT ${PORT}!`);
 });
