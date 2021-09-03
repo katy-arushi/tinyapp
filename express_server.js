@@ -4,6 +4,15 @@ const PORT = 8080; // default port 8080
 
 app.set("view engine", "ejs"); 
 
+//middleware - needed for POST requests
+const bodyParser = require("body-parser");
+app.use(bodyParser.urlencoded({extended: true}));
+
+// cookie middleware
+const cookieParser = require('cookie-parser')
+app.use(cookieParser())
+
+// function to generate new shortURLs
 function generateRandomString() { // generate random string for short URL
   let result = '';
   let characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -13,10 +22,6 @@ function generateRandomString() { // generate random string for short URL
   }
   return result;
 }
-
-//middleware - needed for POST requests
-const bodyParser = require("body-parser");
-app.use(bodyParser.urlencoded({extended: true}));
 
 // object to store all urls
 const urlDatabase = {
@@ -34,9 +39,17 @@ app.get("/", (req, res) => {
   res.send("<html><h1>Hello! Welcome to the TinyApp URL Shortening Service!</h1></html>");
 });
 
+// show all URLs stored in database
+app.get("/urls.json", (req, res) => {
+  res.json(urlDatabase);
+});
+
 // display all URLs that have been shortened, in database obj
 app.get("/urls", (req, res) => {
-  const templateVars = { urls: urlDatabase };
+  const templateVars = {
+    username: req.cookies["username"],
+    urls: urlDatabase 
+  };
   res.render("urls_index", templateVars);
 });
 
@@ -47,7 +60,8 @@ app.get("/urls/new", (req, res) => {
 
 // show page for a shortened URL
 app.get("/urls/:shortURL", (req, res) => {
-  const templateVars = { 
+  const templateVars = {
+    username: req.cookies["username"],
     shortURL: req.params.shortURL, 
     longURL: urlDatabase[req.params.shortURL] 
   };
@@ -63,12 +77,6 @@ app.get('/u/:shortURL', (req, res) => {
 res.redirect(longURL);
 });
 
-// show all URLs stored in database
-app.get("/urls.json", (req, res) => {
-  res.json(urlDatabase);
-});
-
-
 
 // POST REQUESTS
 
@@ -80,12 +88,24 @@ app.post("/urls", (req, res) => {
   res.redirect(`/urls/${shortURL}`)
 });
 
+// post request to login
+app.post("/login", (req, res) => {
+  res.cookie('username', req.body.username)
+  res.redirect('/urls')
+});
+
+// post request to logout
+app.post("/logout", (req, res) => {
+  res.clearCookie('username', req.body.username)
+  res.redirect('/urls')
+});
+
 // post request to edit URL
 app.post("/urls/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
   const longURL = req.body.longURL;
   urlDatabase[shortURL] = longURL
-  res.redirect("/urls/");
+  res.redirect("/urls");
 });
 
 // post request to delete a URL
