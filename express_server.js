@@ -80,6 +80,14 @@ app.post("/urls", (req, res) => {
   res.redirect(`/urls/${shortURL}`)
 });
 
+// post request to edit URL
+app.post("/urls/:shortURL", (req, res) => {
+  const shortURL = req.params.shortURL;
+  const longURL = req.body.longURL;
+  urlDatabase[shortURL] = longURL
+  res.redirect("/urls/");
+});
+
 // post request to delete a URL
 app.post("/urls/:shortURL/delete", (req, res) => {
   const shortURL = req.params.shortURL
@@ -87,14 +95,6 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   res.redirect("/urls")
 });
 
-// post request to edit URL
-app.post("urls/:shortURL", (req, res) => {
-  console.log(req.body)
-  const shortURL = req.params.shortURL;
-  const longURL = req.body.longURL;
-  urlDatabase[shortURL] = longURL
-  res.redirect("/urls/");
-});
 
 
 app.listen(PORT, () => {
