@@ -2,18 +2,18 @@ const express = require("express");
 const app = express();
 const PORT = 8080; // default port 8080
 
-app.set("view engine", "ejs"); 
+app.set("view engine", "ejs");
 
 //middleware - needed for POST requests
 const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({extended: true}));
 
 // cookie middleware
-const cookieParser = require('cookie-parser')
-app.use(cookieParser())
+const cookieParser = require('cookie-parser');
+app.use(cookieParser());
 
 // function to generate new shortURLs
-function generateRandomString() { // generate random string for short URL
+function generateRandomString() {
   let result = '';
   let characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let charactersLength = characters.length;
@@ -48,7 +48,7 @@ app.get("/urls.json", (req, res) => {
 app.get("/urls", (req, res) => {
   const templateVars = {
     username: req.cookies["username"],
-    urls: urlDatabase 
+    urls: urlDatabase
   };
   res.render("urls_index", templateVars);
 });
@@ -62,19 +62,19 @@ app.get("/urls/new", (req, res) => {
 app.get("/urls/:shortURL", (req, res) => {
   const templateVars = {
     username: req.cookies["username"],
-    shortURL: req.params.shortURL, 
-    longURL: urlDatabase[req.params.shortURL] 
+    shortURL: req.params.shortURL,
+    longURL: urlDatabase[req.params.shortURL]
   };
   res.render("urls_show", templateVars);
 });
 
 // redirect short URLs to long URLs
 app.get('/u/:shortURL', (req, res) => {
-  const longURL = urlDatabase[req.params.shortURL]
+  const longURL = urlDatabase[req.params.shortURL];
   if (!urlDatabase[req.params.shortURL]) {
     return res.status(404).send("Error, please check your shortened URL");
- }
-res.redirect(longURL);
+  }
+  res.redirect(longURL);
 });
 
 
@@ -85,34 +85,34 @@ app.post("/urls", (req, res) => {
   const shortURL = generateRandomString();
   const longURL = req.body.longURL;
   urlDatabase[shortURL] = longURL;
-  res.redirect(`/urls/${shortURL}`)
+  res.redirect(`/urls/${shortURL}`);
 });
 
 // post request to login
 app.post("/login", (req, res) => {
-  res.cookie('username', req.body.username)
-  res.redirect('/urls')
+  res.cookie('username', req.body.username);
+  res.redirect('/urls');
 });
 
 // post request to logout
 app.post("/logout", (req, res) => {
-  res.clearCookie('username', req.body.username)
-  res.redirect('/urls')
+  res.clearCookie('username', req.body.username);
+  res.redirect('/urls');
 });
 
 // post request to edit URL
 app.post("/urls/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
   const longURL = req.body.longURL;
-  urlDatabase[shortURL] = longURL
+  urlDatabase[shortURL] = longURL;
   res.redirect("/urls");
 });
 
 // post request to delete a URL
 app.post("/urls/:shortURL/delete", (req, res) => {
-  const shortURL = req.params.shortURL
-  delete urlDatabase[shortURL]
-  res.redirect("/urls")
+  const shortURL = req.params.shortURL;
+  delete urlDatabase[shortURL];
+  res.redirect("/urls");
 });
 
 
