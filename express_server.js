@@ -39,6 +39,10 @@ app.get("/", (req, res) => {
   res.send("<html><h1>Hello! Welcome to the TinyApp URL Shortening Service!</h1></html>");
 });
 
+app.get("/register", (req, res) => {
+  res.render("register")
+});
+
 // show all URLs stored in database
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
