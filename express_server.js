@@ -44,6 +44,11 @@ app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
 
+// GET register page
+app.get("/register", (req, res) => {
+  res.render("register");
+});
+
 // display all URLs that have been shortened, in database obj
 app.get("/urls", (req, res) => {
   const templateVars = {
