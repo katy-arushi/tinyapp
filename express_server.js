@@ -25,10 +25,12 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com"
 };
 
+// object to store users
+let users = {};
+
 app.listen(PORT, () => {
   console.log(`TinyApp server running on PORT ${PORT}!`);
 });
-
 
 
 // HTTP ROUTES
@@ -52,9 +54,10 @@ app.get("/register", (req, res) => {
 
 // GET all URLs that have been shortened, in database obj
 app.get("/urls", (req, res) => {
+  const user = users[req.cookies['user_id']]
   const templateVars = {
-    username: req.cookies["username"],
-    urls: urlDatabase
+    urls: urlDatabase,
+    user: users[req.cookies['user_id']]
   };
   res.render("urls_index", templateVars);
 });
@@ -66,10 +69,11 @@ app.get("/urls/new", (req, res) => {
 
 // GET page for a shortened URL
 app.get("/urls/:shortURL", (req, res) => {
+  //const user = users[req.cookies[user_id]]
   const templateVars = {
-    username: req.cookies["username"],
     shortURL: req.params.shortURL,
-    longURL: urlDatabase[req.params.shortURL]
+    longURL: urlDatabase[req.params.shortURL],
+    user: users[req.cookies['user_id']]
   };
   res.render("urls_show", templateVars);
 });
@@ -106,6 +110,21 @@ app.post("/logout", (req, res) => {
   res.redirect('/urls');
 });
 
+// POST request to submit registration form
+app.post("/register", (req, res) => {
+  const id = generateRandomString();
+  const email = req.body.email;
+  const password = req.body.password
+  users[id] = {
+    id,
+    email,
+    password
+  };
+  res.cookie('user_id', id);
+  console.log(users)
+  res.redirect('/urls');
+});
+
 // POST request to edit URL
 app.post("/urls/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
@@ -120,3 +139,11 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   delete urlDatabase[shortURL];
   res.redirect("/urls");
 });
+
+users = {
+  zG7FH9: { 
+    id: 'zG7FH9', 
+    email: 'katy@gmail.com', 
+    password: 'tinyapp!' 
+  }
+}
