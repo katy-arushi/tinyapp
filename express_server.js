@@ -1,15 +1,11 @@
 const express = require("express");
 const app = express();
-const PORT = 8080; // default port 8080
+const PORT = 8080;
+const bodyParser = require("body-parser");
+const cookieParser = require('cookie-parser');
 
 app.set("view engine", "ejs");
-
-//middleware - needed for POST requests
-const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({extended: true}));
-
-// cookie middleware
-const cookieParser = require('cookie-parser');
 app.use(cookieParser());
 
 // function to generate new shortURLs
@@ -29,17 +25,22 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com"
 };
 
+app.listen(PORT, () => {
+  console.log(`TinyApp server running on PORT ${PORT}!`);
+});
+
+
 
 // HTTP ROUTES
 
 // GET REQUESTS
 
-// home page
+// GET home page
 app.get("/", (req, res) => {
   res.send("<html><h1>Hello! Welcome to the TinyApp URL Shortening Service!</h1></html>");
 });
 
-// show all URLs stored in database
+// GET all URLs stored in database
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
@@ -49,7 +50,7 @@ app.get("/register", (req, res) => {
   res.render("register");
 });
 
-// display all URLs that have been shortened, in database obj
+// GET all URLs that have been shortened, in database obj
 app.get("/urls", (req, res) => {
   const templateVars = {
     username: req.cookies["username"],
@@ -58,12 +59,12 @@ app.get("/urls", (req, res) => {
   res.render("urls_index", templateVars);
 });
 
-// submit a new URL - get request for input form
+// GET input form to submit a new URL
 app.get("/urls/new", (req, res) => {
   res.render("urls_new");
 });
 
-// show page for a shortened URL
+// GET page for a shortened URL
 app.get("/urls/:shortURL", (req, res) => {
   const templateVars = {
     username: req.cookies["username"],
@@ -73,7 +74,7 @@ app.get("/urls/:shortURL", (req, res) => {
   res.render("urls_show", templateVars);
 });
 
-// redirect short URLs to long URLs
+// GET redirect short URLs to long URLs
 app.get('/u/:shortURL', (req, res) => {
   const longURL = urlDatabase[req.params.shortURL];
   if (!urlDatabase[req.params.shortURL]) {
@@ -85,7 +86,7 @@ app.get('/u/:shortURL', (req, res) => {
 
 // POST REQUESTS
 
-// submit form to add URL - post data and redirect to URLs home
+// POST form to add URL - post data and redirect to URLs home
 app.post("/urls", (req, res) => {
   const shortURL = generateRandomString();
   const longURL = req.body.longURL;
@@ -93,19 +94,19 @@ app.post("/urls", (req, res) => {
   res.redirect(`/urls/${shortURL}`);
 });
 
-// post request to login
+// POST request to login
 app.post("/login", (req, res) => {
   res.cookie('username', req.body.username);
   res.redirect('/urls');
 });
 
-// post request to logout
+// POST request to logout
 app.post("/logout", (req, res) => {
   res.clearCookie('username', req.body.username);
   res.redirect('/urls');
 });
 
-// post request to edit URL
+// POST request to edit URL
 app.post("/urls/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
   const longURL = req.body.longURL;
@@ -113,15 +114,9 @@ app.post("/urls/:shortURL", (req, res) => {
   res.redirect("/urls");
 });
 
-// post request to delete a URL
+// POST request to delete a URL
 app.post("/urls/:shortURL/delete", (req, res) => {
   const shortURL = req.params.shortURL;
   delete urlDatabase[shortURL];
   res.redirect("/urls");
-});
-
-
-
-app.listen(PORT, () => {
-  console.log(`TinyApp server running on PORT ${PORT}!`);
 });
