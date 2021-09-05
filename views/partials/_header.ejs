@@ -8,17 +8,17 @@
       <div class="navbar-nav">
         <a class="nav-item nav-link" href="/urls">My URLs</a>
         <a class="nav-item nav-link" href="/urls/new">Create New URL</a>
-        <div class="inline-flex" style="right: 25px; position: absolute;">
-          <% if(!username) { %>
-            <form class="form-inline position-absolute-right" action="/login" method="POST">
-              <label for="username"> <%= username %> </label>
-              <input class="form-control" type="text" name="username" placeholder="Username" style="width: 225px; margin-right: 10px;">
-              <button type="submit" class="btn btn-primary">Login</button>
+        <div class="d-flex">
+          <% if(!userID) { %>
+            <form action="/register" class="inline">
+              <button class="btn btn-primary" type="submit" style="margin-right: 10px;">Register</button>
+            </form>
+            <form action="/login" class="inline">
+              <button class="btn btn-primary" type="submit">Login</button>
             </form>
           <% } else { %>
-            <form class="form-inline justify-content-right" action="/logout" method="POST">
-              <label for="username" style="margin-right: 15px;">Logged in as: <%= username %> </label>
-              <button type="submit" class="btn btn-primary">Logout</button>
+            <form action="/logout" class="inline">
+              <button class="btn btn-primary" type="submit">Logout</button>
             </form>
           <% } %>
         </div>
@@ -26,3 +26,6 @@
     </div>
   </nav>
 </header>
+
+
+
