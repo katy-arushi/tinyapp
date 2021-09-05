@@ -8,6 +8,10 @@ app.set("view engine", "ejs");
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(cookieParser());
 
+app.listen(PORT, () => {
+  console.log(`TinyApp server running on PORT ${PORT}!`);
+});
+
 // function to generate new shortURLs
 function generateRandomString() {
   let result = '';
@@ -26,12 +30,29 @@ const urlDatabase = {
 };
 
 // object to store users
-let users = {};
+let users = { 
+  "userRandomID": {
+    id: "userRandomID", 
+    email: "user@example.com", 
+    password: "purple-monkey-dinosaur"
+  },
+ "user2RandomID": {
+    id: "user2RandomID", 
+    email: "user2@example.com", 
+    password: "dishwasher-funk"
+  }
+};
 
-app.listen(PORT, () => {
-  console.log(`TinyApp server running on PORT ${PORT}!`);
-});
-
+function findUser(email, password) {
+  for (const user in users) {
+    if (users[user].email === email) {
+      if (users[user].password === password) {
+        return users[user] // returns user object
+      }
+    }
+  }
+  return false // case where email and password don't match or email doesn't exist
+}
 
 // HTTP ROUTES
 
@@ -49,14 +70,32 @@ app.get("/urls.json", (req, res) => {
 
 // GET register page
 app.get("/register", (req, res) => {
-  res.render("register");
+  const templateVars = {
+    userID: req.cookies["user_id"],
+    user: users[req.cookies['user_id']]
+  };
+  res.render("register", templateVars);
+});
+
+// GET login page
+app.get("/login", (req, res) => {
+  const templateVars = {
+    userID: null,
+    user: users[req.cookies['user_id']]
+  };
+  res.render("login", templateVars)
+});
+
+// GET logout page
+app.get("/logout", (req, res) => {
+  res.redirect("/login")
 });
 
 // GET all URLs that have been shortened, in database obj
 app.get("/urls", (req, res) => {
-  const user = users[req.cookies['user_id']]
   const templateVars = {
     urls: urlDatabase,
+    userID: req.cookies["user_id"],
     user: users[req.cookies['user_id']]
   };
   res.render("urls_index", templateVars);
@@ -64,16 +103,20 @@ app.get("/urls", (req, res) => {
 
 // GET input form to submit a new URL
 app.get("/urls/new", (req, res) => {
-  res.render("urls_new");
+  const templateVars = {
+    userID: req.cookies["user_id"],
+    user: users[req.cookies['user_id']]
+  };
+  res.render("urls_new", templateVars);
 });
 
 // GET page for a shortened URL
 app.get("/urls/:shortURL", (req, res) => {
-  //const user = users[req.cookies[user_id]]
   const templateVars = {
     shortURL: req.params.shortURL,
     longURL: urlDatabase[req.params.shortURL],
-    user: users[req.cookies['user_id']]
+    user: users[req.cookies['user_id']],
+    userID: req.cookies["user_id"]
   };
   res.render("urls_show", templateVars);
 });
@@ -100,13 +143,20 @@ app.post("/urls", (req, res) => {
 
 // POST request to login
 app.post("/login", (req, res) => {
-  res.cookie('username', req.body.username);
-  res.redirect('/urls');
+  const email = req.body.email
+  const password = req.body.password // password that is entered to the login form
+  const user = findUser(email, password)
+  if (user) {
+    res.cookie('user_id', user.id);
+    res.redirect('/urls');
+  } else {
+    res.status(403).send("Error, login failed")
+  }
 });
 
 // POST request to logout
 app.post("/logout", (req, res) => {
-  res.clearCookie('username', req.body.username);
+  res.clearCookie('user_id', req.body.id);
   res.redirect('/urls');
 });
 
@@ -115,6 +165,14 @@ app.post("/register", (req, res) => {
   const id = generateRandomString();
   const email = req.body.email;
   const password = req.body.password
+  if (email === '' || password === '') {
+    return res.status(400).send("Error, email or password cannot be empty");
+  }
+  for (const user in users) {
+    if (users[user].email === email) {
+      return res.status(400).send("Error, this email has already been registered");
+    }
+  }
   users[id] = {
     id,
     email,
@@ -139,11 +197,3 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   delete urlDatabase[shortURL];
   res.redirect("/urls");
 });
-
-users = {
-  zG7FH9: { 
-    id: 'zG7FH9', 
-    email: 'katy@gmail.com', 
-    password: 'tinyapp!' 
-  }
-}
