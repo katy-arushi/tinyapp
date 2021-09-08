@@ -23,10 +23,34 @@ function generateRandomString() {
   return result;
 }
 
+function findUser(email, password) {
+  for (const user in users) {
+    if (users[user].email === email) {
+      if (users[user].password === password) {
+        return users[user] // returns user object
+      }
+    }
+  }
+  return false // case where email and password don't match or email doesn't exist
+}
+
+// old database
+// const urlDatabase = {
+  //   "b2xVn2": "http://www.lighthouselabs.ca",
+  //   "9sm5xK": "http://www.google.com"
+  // };
+  
 // object to store all urls
+// Database 2.0
 const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
+  b6UTxQ: { 
+    longURL: "https://www.tsn.ca", 
+    userID: "aJ48lW" 
+  },
+  i3BoGr: { 
+    longURL: "https://www.google.ca", 
+    userID: "aJ48lW" 
+  }
 };
 
 // object to store users
@@ -43,28 +67,11 @@ let users = {
   }
 };
 
-function findUser(email, password) {
-  for (const user in users) {
-    if (users[user].email === email) {
-      if (users[user].password === password) {
-        return users[user] // returns user object
-      }
-    }
-  }
-  return false // case where email and password don't match or email doesn't exist
-}
-
-// HTTP ROUTES
-
 // GET REQUESTS
 
 // GET home page
 app.get("/", (req, res) => {
   res.send("<html><h1>Hello! Welcome to the TinyApp URL Shortening Service!</h1></html>");
-});
-
-app.get("/register", (req, res) => {
-  res.render("register")
 });
 
 // show all URLs stored in database
@@ -97,21 +104,36 @@ app.get("/logout", (req, res) => {
 
 // GET all URLs that have been shortened, in database obj
 app.get("/urls", (req, res) => {
-  const templateVars = {
-    urls: urlDatabase,
-    userID: req.cookies["user_id"],
-    user: users[req.cookies['user_id']]
-  };
-  res.render("urls_index", templateVars);
+  const userID = req.cookies['user_id'];
+  if (!userID) {
+    const templateVars = {
+      user: null
+    };
+    res.render("login_register_prompt", templateVars) // create page that redirects to login or register page
+  } else {
+    let userSpecificDatabase = {}  // only show the urls for the logged in user
+
+
+    const templateVars = {
+      urls: urlDatabase,
+      userID: req.cookies['user_id'],
+      user: users[userID]
+    };
+    res.render("urls_index", templateVars);
+  }
 });
 
 // GET input form to submit a new URL
 app.get("/urls/new", (req, res) => {
-  const templateVars = {
-    userID: req.cookies["user_id"],
-    user: users[req.cookies['user_id']]
-  };
-  res.render("urls_new", templateVars);
+  const userID = req.cookies['user_id'];
+  if (!userID) {
+    res.redirect("/login")
+  } else {
+    const templateVars = {
+      user: users[userID]
+    };
+    res.render("urls_new", templateVars);
+  }
 });
 
 // GET page for a shortened URL
@@ -127,7 +149,7 @@ app.get("/urls/:shortURL", (req, res) => {
 
 // GET redirect short URLs to long URLs
 app.get('/u/:shortURL', (req, res) => {
-  const longURL = urlDatabase[req.params.shortURL];
+  const longURL = urlDatabase[req.params.shortURL].longURL;
   if (!urlDatabase[req.params.shortURL]) {
     return res.status(404).send("Error, please check your shortened URL");
   }
@@ -160,7 +182,7 @@ app.post("/login", (req, res) => {
 
 // POST request to logout
 app.post("/logout", (req, res) => {
-  res.clearCookie('user_id', req.body.id);
+  res.clearCookie('user_id');
   res.redirect('/urls');
 });
 
