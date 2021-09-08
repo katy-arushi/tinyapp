@@ -12,8 +12,10 @@ app.listen(PORT, () => {
   console.log(`TinyApp server running on PORT ${PORT}!`);
 });
 
+
+// HELPER FUNCTIONS
 // function to generate new shortURLs
-function generateRandomString() {
+const generateRandomString = function() {
   let result = '';
   let characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let charactersLength = characters.length;
@@ -23,49 +25,59 @@ function generateRandomString() {
   return result;
 }
 
-function findUser(email, password) {
+// function to determine if user login is valid (if user is registered and password is correct)
+const findUser = function(email, password) {
   for (const user in users) {
     if (users[user].email === email) {
       if (users[user].password === password) {
-        return users[user] // returns user object
+        return users[user]; // returns user object
       }
     }
   }
-  return false // case where email and password don't match or email doesn't exist
+  return false; // case where email and password don't match or email doesn't exist
 }
 
-// old database
-// const urlDatabase = {
-  //   "b2xVn2": "http://www.lighthouselabs.ca",
-  //   "9sm5xK": "http://www.google.com"
-  // };
-  
-// object to store all urls
-// Database 2.0
+// function to find all the user's shortURLs
+const urlsForUser = function(id, databaseObject) {
+  let userSpecificDatabase = {};  // only show the urls for the logged in user
+  for (const shortURL in databaseObject) {
+    if (id === databaseObject[shortURL].userID) {
+      userSpecificDatabase[shortURL] = databaseObject[shortURL]
+    }
+  }
+  return userSpecificDatabase;
+}
+
+// Database object to store all urls
 const urlDatabase = {
-  b6UTxQ: { 
-    longURL: "https://www.tsn.ca", 
-    userID: "aJ48lW" 
+  b6UTxQ: {
+    longURL: "https://www.tsn.ca",
+    userID: "aJ48lW"
   },
-  i3BoGr: { 
-    longURL: "https://www.google.ca", 
-    userID: "aJ48lW" 
+  i3BoGr: {
+    longURL: "https://www.google.ca",
+    userID: "aJ48lW"
+  },
+  cYpEMJ: {
+    longURL: "https://www.cbc.ca/news",
+    userID: "M7yu0z"
   }
 };
 
-// object to store users
-let users = { 
-  "userRandomID": {
-    id: "userRandomID", 
-    email: "user@example.com", 
-    password: "purple-monkey-dinosaur"
+// Database object to store users
+let users = {
+  "aJ48lW": {
+    id: "aJ48lW",
+    email: "arushi@email",
+    password: "1234"
   },
- "user2RandomID": {
-    id: "user2RandomID", 
-    email: "user2@example.com", 
+  "B6789": {
+    id: "user2RandomID",
+    email: "user2@example.com",
     password: "dishwasher-funk"
   }
 };
+
 
 // GET REQUESTS
 
@@ -94,12 +106,12 @@ app.get("/login", (req, res) => {
     userID: null,
     user: users[req.cookies['user_id']]
   };
-  res.render("login", templateVars)
+  res.render("login", templateVars);
 });
 
 // GET logout page
 app.get("/logout", (req, res) => {
-  res.redirect("/login")
+  res.redirect("/login");
 });
 
 // GET all URLs that have been shortened, in database obj
@@ -109,13 +121,11 @@ app.get("/urls", (req, res) => {
     const templateVars = {
       user: null
     };
-    res.render("login_register_prompt", templateVars) // create page that redirects to login or register page
+    res.render("login_register_prompt", templateVars); // create page that redirects to login or register page
   } else {
-    let userSpecificDatabase = {}  // only show the urls for the logged in user
-
-
+    let userSpecificDatabase = urlsForUser(userID, urlDatabase);
     const templateVars = {
-      urls: urlDatabase,
+      urls: userSpecificDatabase,
       userID: req.cookies['user_id'],
       user: users[userID]
     };
@@ -127,7 +137,7 @@ app.get("/urls", (req, res) => {
 app.get("/urls/new", (req, res) => {
   const userID = req.cookies['user_id'];
   if (!userID) {
-    res.redirect("/login")
+    res.redirect("/login");
   } else {
     const templateVars = {
       user: users[userID]
@@ -138,13 +148,21 @@ app.get("/urls/new", (req, res) => {
 
 // GET page for a shortened URL
 app.get("/urls/:shortURL", (req, res) => {
-  const templateVars = {
-    shortURL: req.params.shortURL,
-    longURL: urlDatabase[req.params.shortURL],
-    user: users[req.cookies['user_id']],
-    userID: req.cookies["user_id"]
-  };
-  res.render("urls_show", templateVars);
+  const userID = req.cookies['user_id'];
+  if (!userID) {
+    const templateVars = {
+      user: null
+    };
+    res.render("login_register_prompt", templateVars);
+  } else {
+    const templateVars = {
+      shortURL: req.params.shortURL,
+      longURL: urlDatabase[req.params.shortURL].longURL,
+      user: users[req.cookies['user_id']],
+      userID: req.cookies["user_id"]
+    };
+    res.render("urls_show", templateVars);
+  }
 });
 
 // GET redirect short URLs to long URLs
@@ -169,14 +187,14 @@ app.post("/urls", (req, res) => {
 
 // POST request to login
 app.post("/login", (req, res) => {
-  const email = req.body.email
-  const password = req.body.password // password that is entered to the login form
-  const user = findUser(email, password)
+  const email = req.body.email;
+  const password = req.body.password; // password that is entered to the login form
+  const user = findUser(email, password);
   if (user) {
     res.cookie('user_id', user.id);
     res.redirect('/urls');
   } else {
-    res.status(403).send("Error, login failed")
+    res.status(403).send("Error, login failed");
   }
 });
 
@@ -190,7 +208,7 @@ app.post("/logout", (req, res) => {
 app.post("/register", (req, res) => {
   const id = generateRandomString();
   const email = req.body.email;
-  const password = req.body.password
+  const password = req.body.password;
   if (email === '' || password === '') {
     return res.status(400).send("Error, email or password cannot be empty");
   }
@@ -205,7 +223,7 @@ app.post("/register", (req, res) => {
     password
   };
   res.cookie('user_id', id);
-  console.log(users)
+  console.log(users);
   res.redirect('/urls');
 });
 
