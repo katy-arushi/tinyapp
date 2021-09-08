@@ -1,13 +1,17 @@
-const express = require("express");
+// -------------------- DEPENDENCIES -------------------- //
+const express = require('express');
 const app = express();
-const PORT = 8080;
-const bodyParser = require("body-parser");
+const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
+const bcrypt = require('bcrypt');
 
+// -------------------- MIDDLEWARE -------------------- //
 app.set("view engine", "ejs");
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(cookieParser());
 
+//  ------------------------ PORT ---------------------- //
+const PORT = 8080;
 app.listen(PORT, () => {
   console.log(`TinyApp server running on PORT ${PORT}!`);
 });
@@ -29,7 +33,7 @@ const generateRandomString = function() {
 const findUser = function(email, password) {
   for (const user in users) {
     if (users[user].email === email) {
-      if (users[user].password === password) {
+      if (bcrypt.compareSync(password, users[user].password)) { 
         return users[user]; // returns user object
       }
     }
@@ -47,6 +51,8 @@ const urlsForUser = function(id, databaseObject) {
   }
   return userSpecificDatabase;
 }
+
+// -------------------- DATABASE OBJECTS -------------------- //
 
 // Database object to store all urls
 const urlDatabase = {
@@ -70,16 +76,11 @@ let users = {
     id: "aJ48lW",
     email: "arushi@email",
     password: "1234"
-  },
-  "B6789": {
-    id: "user2RandomID",
-    email: "user2@example.com",
-    password: "dishwasher-funk"
   }
 };
 
 
-// GET REQUESTS
+// -------------------- GET ROUTE HANDLERS -------------------- //
 
 // GET home page
 app.get("/", (req, res) => {
@@ -89,6 +90,11 @@ app.get("/", (req, res) => {
 // show all URLs stored in database
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
+});
+
+// show all users stored in database
+app.get("/users.json", (req, res) => {
+  res.json(users);
 });
 
 // GET register page
@@ -149,12 +155,13 @@ app.get("/urls/new", (req, res) => {
 // GET page for a shortened URL
 app.get("/urls/:shortURL", (req, res) => {
   const userID = req.cookies['user_id'];
+  const shortURL = req.params.shortURL;
   if (!userID) {
     const templateVars = {
       user: null
     };
     res.render("login_register_prompt", templateVars);
-  } else {
+  } else if (userID === urlDatabase[shortURL].userID) {
     const templateVars = {
       shortURL: req.params.shortURL,
       longURL: urlDatabase[req.params.shortURL].longURL,
@@ -162,6 +169,11 @@ app.get("/urls/:shortURL", (req, res) => {
       userID: req.cookies["user_id"]
     };
     res.render("urls_show", templateVars);
+  } else {
+    const templateVars = {
+      user: null
+    };
+    res.render("url_edit_delete_prompt", templateVars);
   }
 });
 
@@ -175,13 +187,12 @@ app.get('/u/:shortURL', (req, res) => {
 });
 
 
-// POST REQUESTS
+// -------------------- POST ROUTE HANDLERS -------------------- //
 
 // POST form to add URL - post data and redirect to URLs home
 app.post("/urls", (req, res) => {
   const shortURL = generateRandomString();
   const longURL = req.body.longURL;
-  const userID = req.cookies["user_id"]
   urlDatabase[shortURL] = {longURL: longURL, userID: req.cookies["user_id"]};
   res.redirect(`/urls/${shortURL}`);
 });
@@ -190,6 +201,7 @@ app.post("/urls", (req, res) => {
 app.post("/login", (req, res) => {
   const email = req.body.email;
   const password = req.body.password; // password that is entered to the login form
+  const hashedPassword = bcrypt.hashSync(password, 10);
   const user = findUser(email, password);
   if (user) {
     res.cookie('user_id', user.id);
@@ -210,6 +222,7 @@ app.post("/register", (req, res) => {
   const id = generateRandomString();
   const email = req.body.email;
   const password = req.body.password;
+  const hashedPassword = bcrypt.hashSync(password, 10);
   if (email === '' || password === '') {
     return res.status(400).send("Error, email or password cannot be empty");
   }
@@ -221,10 +234,9 @@ app.post("/register", (req, res) => {
   users[id] = {
     id,
     email,
-    password
+    password: hashedPassword
   };
   res.cookie('user_id', id);
-  console.log(users);
   res.redirect('/urls');
 });
 
@@ -232,29 +244,30 @@ app.post("/register", (req, res) => {
 app.post("/urls/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
   const longURL = req.body.longURL;
-  urlDatabase[shortURL] = {longURL: longURL, userID: req.cookies["user_id"]};
-  res.redirect("/urls");
+  const userID = req.cookies['user_id'];
+  // check if short URL belongs to the user (by checking userID)
+  if ((urlDatabase[shortURL].userID) === userID) {
+    urlDatabase[shortURL] = {longURL: longURL, userID: req.cookies["user_id"]};
+    res.redirect("/urls");
+  } else {
+    const templateVars = {
+      user: null
+    };
+    res.render("url_edit_delete_prompt", templateVars);
+  }
 });
 
 // POST request to delete a URL
 app.post("/urls/:shortURL/delete", (req, res) => {
   const shortURL = req.params.shortURL;
-  delete urlDatabase[shortURL];
-  res.redirect("/urls");
+  const userID = req.cookies['user_id'];
+  if ((urlDatabase[shortURL].userID) === userID) {
+    delete urlDatabase[shortURL];
+    res.redirect("/urls");
+  } else {
+    const templateVars = {
+      user: null
+    };
+    res.render("url_edit_delete_prompt", templateVars);
+  }
 });
-
-
-// const urlDatabase = {
-//   b6UTxQ: {
-//     longURL: "https://www.tsn.ca",
-//     userID: "aJ48lW"
-//   },
-//   i3BoGr: {
-//     longURL: "https://www.google.ca",
-//     userID: "aJ48lW"
-//   },
-//   cYpEMJ: {
-//     longURL: "https://www.cbc.ca/news",
-//     userID: "M7yu0z"
-//   }
-// };
