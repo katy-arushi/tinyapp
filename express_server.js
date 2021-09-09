@@ -6,7 +6,6 @@ const cookieSession = require('cookie-session');
 const bcrypt = require('bcrypt');
 const { generateRandomString, getUserByEmail, urlsForUser } = require("./helpers");
 
-
 // -------------------------------- MIDDLEWARE -------------------------------- //
 app.set("view engine", "ejs");
 app.use(bodyParser.urlencoded({extended: true}));
@@ -29,7 +28,7 @@ app.listen(PORT, () => {
 const urlDatabase = {
   b6UTxQ: {
     longURL: "https://www.tsn.ca",
-    userID: "aJ48lW"
+    userID: "M7yu0z"
   },
   i3BoGr: {
     longURL: "https://www.google.ca",
@@ -37,7 +36,7 @@ const urlDatabase = {
   },
   cYpEMJ: {
     longURL: "https://www.cbc.ca/news",
-    userID: "M7yu0z"
+    userID: "aJ48lW"
   }
 };
 
@@ -201,7 +200,6 @@ app.post("/urls", (req, res) => {
 // ERROR if user is not found by getUserByEmail function
 // ERROR if user is found, but password is incorrect
 // REDIRECT to urls page
-
 app.post("/login", (req, res) => {
   const email = req.body.email;
   const password = req.body.password; // password that is entered to the login form
