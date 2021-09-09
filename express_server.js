@@ -4,7 +4,7 @@ const app = express();
 const bodyParser = require('body-parser');
 const cookieSession = require('cookie-session');
 const bcrypt = require('bcrypt');
-const { generateRandomString, findUser, urlsForUser } = require("./helpers");
+const { generateRandomString, getUserByEmail, urlsForUser } = require("./helpers");
 
 
 // -------------------------------- MIDDLEWARE -------------------------------- //
@@ -197,19 +197,37 @@ app.post("/urls", (req, res) => {
 });
 
 // POST request to login
-// ERROR if user authentication failed
+// ERROR if email or password are left empty
+// ERROR if user is not found by getUserByEmail function
+// ERROR if user is found, but password is incorrect
 // REDIRECT to urls page
+
 app.post("/login", (req, res) => {
   const email = req.body.email;
   const password = req.body.password; // password that is entered to the login form
-  const user = findUser(email, password);
-  if (user) {
-    req.session.user_id = user.id;
-    res.redirect('/urls');
-  } else {
+  const user = getUserByEmail(email, users);
+  if (!email || !password) {
     const templateVars = {
       user: users[req.session.user_id],
-      error: "Error, login failed. Make sure your email and password are correct."
+      error: "Error, login failed. You have left a required field for login empty."
+    };
+    res.status(401).render("error", templateVars);
+  }
+  if (user) { // happy path. when user exists.
+    if (bcrypt.compareSync(password, user.password)) { // even happier path. when password is correct. login in the user!
+      req.session.user_id = user.id;
+      res.redirect('/urls');
+    } else { // case where user exists, but password is incorrect.
+      const templateVars = {
+        user: users[req.session.user_id],
+        error: "Error, login failed. Password is incorrect."
+      };
+      res.status(401).render("error", templateVars);
+    }
+  } else if (!user) { // case where no user is found
+    const templateVars = {
+      user: users[req.session.user_id],
+      error: "Error, login failed. No account exists."
     };
     res.status(401).render("error", templateVars);
   }
@@ -234,19 +252,20 @@ app.post("/register", (req, res) => {
   if (email === '' || password === '') {
     const templateVars = {
       user: null,
-      error: "Error, email or password cannot be empty"
+      error: "Error, email or password cannot be left empty."
     };
     return res.status(400).render("error", templateVars);
   }
-  for (const user in users) {
-    if (users[user].email === email) {
-      const templateVars = {
-        user: null,
-        error: "Error, this email has already been registered"
-      };
-      return res.status(400).render("error", templateVars);
-    }
+
+  // check to see if a user is found
+  if (getUserByEmail(email, users)) {
+    const templateVars = {
+      user: null,
+      error: "Error, this email has already been registered."
+    };
+    return res.status(400).render("error", templateVars);
   }
+
   users[id] = {
     id,
     email,

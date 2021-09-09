@@ -10,12 +10,10 @@ const generateRandomString = function() {
 };
 
 // function to determine if user login is valid (if user is registered and password is correct)
-const findUser = function(email, password) {
-  for (const user in users) {
-    if (users[user].email === email) {
-      if (bcrypt.compareSync(password, users[user].password)) {
-        return users[user]; // returns user object
-      }
+const getUserByEmail = function(email, userDatabase) {
+  for (const user in userDatabase) {
+    if (userDatabase[user].email === email) {
+      return userDatabase[user]; // returns user object
     }
   }
   return false; // case where email and password don't match or email doesn't exist
@@ -34,6 +32,6 @@ const urlsForUser = function(id, databaseObject) {
 
 module.exports = { 
   generateRandomString,
-  findUser,
+  getUserByEmail,
   urlsForUser
 };
