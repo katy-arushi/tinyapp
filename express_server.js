@@ -88,6 +88,7 @@ let users = {
 
 // GET home page - display welcome message
 app.get("/", (req, res) => {
+  res.session = null;
   const templateVars = {
     user: null,
     welcomeMessage: "Welcome to TinyApp! Please register or login to begin using TinyApp."
@@ -121,12 +122,13 @@ app.get("/login", (req, res) => {
   res.render("login", templateVars);
 });
 
-// GET logout page
-// REDIRECT to login
-app.get("/logout", (req, res) => {
-  res.session = null;
-  res.redirect("/login");
-});
+// // GET logout page
+// // REDIRECT to login
+// app.get("/logout", (req, res) => {
+//   res.session = null;
+//   req.session.destroy();
+//   res.redirect("/login");
+// });
 
 // GET all URLs that have been shortened, in database obj
 // ERROR if no user is logged in
@@ -161,6 +163,7 @@ app.get("/urls/new", (req, res) => {
     res.status(401).render("error", templateVars);
   } else {
     const templateVars = {
+      userID: req.session.user_id,
       user: users[userID]
     };
     res.render("urls_new", templateVars);
@@ -173,6 +176,13 @@ app.get("/urls/new", (req, res) => {
 app.get("/urls/:shortURL", (req, res) => {
   const userID = req.session.user_id;
   const shortURL = req.params.shortURL;
+  if (!urlDatabase[req.params.shortURL]) {
+    const templateVars = {
+      user: users[req.session.user_id],
+      error: "Error, this tiny URL does not exist."
+    };
+    res.status(404).render("error", templateVars);
+  }
   if (!userID) { // if no user is logged in
     const templateVars = {
       user: null,
@@ -189,7 +199,7 @@ app.get("/urls/:shortURL", (req, res) => {
     res.render("urls_show", templateVars);
   } else {
     const templateVars = {
-      user: null,
+      user: users[req.session.user_id],
       error: "Sorry, you are not permitted to view, edit, or delete this URL."
     };
     res.status(403).render("error", templateVars);
@@ -203,7 +213,7 @@ app.get('/u/:shortURL', (req, res) => {
   const longURL = urlDatabase[req.params.shortURL].longURL;
   if (!urlDatabase[req.params.shortURL]) {
     const templateVars = {
-      user: null,
+      user: users[req.session.user_id],
       error: "Error, this tiny URL does not exist."
     };
     return res.status(404).render("error", templateVars);
@@ -217,6 +227,9 @@ app.get('/u/:shortURL', (req, res) => {
 // POST form to add URL - post data
 // REDIRECT to short URL page
 app.post("/urls", (req, res) => {
+  if (!req.session.userID) {
+    return res.redirect("/login");
+  }
   const shortURL = generateRandomString();
   const longURL = req.body.longURL;
   urlDatabase[shortURL] = {longURL: longURL, userID: req.session.user_id};
@@ -235,7 +248,7 @@ app.post("/login", (req, res) => {
     res.redirect('/urls');
   } else {
     const templateVars = {
-      user: null,
+      user: users[req.session.user_id],
       error: "Error, login failed. Make sure your email and password are correct."
     }
     res.status(401).render("error", templateVars);
@@ -296,7 +309,7 @@ app.post("/urls/:shortURL/edit", (req, res) => {
     res.redirect("/urls");
   } else {
     const templateVars = {
-      user: null,
+      user: users[req.session.user_id],
       error: "Sorry, you are not permitted to view, edit, or delete this URL."
     };
     res.status(403).render("error", templateVars);
@@ -313,7 +326,7 @@ app.post("/urls/:shortURL/delete", (req, res) => {
     res.redirect("/urls");
   } else {
     const templateVars = {
-      user: null,
+      user: users[req.session.user_id],
       error: "Sorry, you are not permitted to view, edit, or delete this URL."
     };
     res.status(403).render("error", templateVars);
