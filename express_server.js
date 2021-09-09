@@ -56,7 +56,8 @@ app.get("/", (req, res) => {
   req.session = null;
   const templateVars = {
     user: null,
-    welcomeMessage: "Welcome to TinyApp! Please register or login to begin using TinyApp."
+    welcomeMessage1: "Welcome to TinyApp!",
+    welcomeMessage2: "Please register or login to begin using TinyApp."
   };
   res.render("home", templateVars);
 });
