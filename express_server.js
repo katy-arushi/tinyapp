@@ -2,7 +2,7 @@
 const express = require('express');
 const app = express();
 const bodyParser = require('body-parser');
-const cookieSession = require('cookie-session')
+const cookieSession = require('cookie-session');
 const bcrypt = require('bcrypt');
 
 // -------------------------------- MIDDLEWARE -------------------------------- //
@@ -32,30 +32,30 @@ const generateRandomString = function() {
     result += characters.charAt(Math.floor(Math.random() * charactersLength));
   }
   return result;
-}
+};
 
 // function to determine if user login is valid (if user is registered and password is correct)
 const findUser = function(email, password) {
   for (const user in users) {
     if (users[user].email === email) {
-      if (bcrypt.compareSync(password, users[user].password)) { 
+      if (bcrypt.compareSync(password, users[user].password)) {
         return users[user]; // returns user object
       }
     }
   }
   return false; // case where email and password don't match or email doesn't exist
-}
+};
 
 // function to find all the user's shortURLs
 const urlsForUser = function(id, databaseObject) {
   let userSpecificDatabase = {};  // only show the urls for the logged in user
   for (const shortURL in databaseObject) {
     if (id === databaseObject[shortURL].userID) {
-      userSpecificDatabase[shortURL] = databaseObject[shortURL]
+      userSpecificDatabase[shortURL] = databaseObject[shortURL];
     }
   }
   return userSpecificDatabase;
-}
+};
 
 // ----------------------------------- DATABASE OBJECTS -------------------------------- //
 
@@ -92,7 +92,7 @@ app.get("/", (req, res) => {
   const templateVars = {
     user: null,
     welcomeMessage: "Welcome to TinyApp! Please register or login to begin using TinyApp."
-  }
+  };
   res.render("home", templateVars);
 });
 
@@ -189,7 +189,7 @@ app.get("/urls/:shortURL", (req, res) => {
       error: "Sorry, you must login to view this URL."
     };
     res.status(401).render("error", templateVars);
-  } else if (userID === urlDatabase[shortURL].userID) { // if URL belongs to the current user (checked via cookie) 
+  } else if (userID === urlDatabase[shortURL].userID) { // if URL belongs to the current user (checked via cookie)
     const templateVars = {
       shortURL: req.params.shortURL,
       longURL: urlDatabase[req.params.shortURL].longURL,
@@ -250,7 +250,7 @@ app.post("/login", (req, res) => {
     const templateVars = {
       user: users[req.session.user_id],
       error: "Error, login failed. Make sure your email and password are correct."
-    }
+    };
     res.status(401).render("error", templateVars);
   }
 });
@@ -275,7 +275,7 @@ app.post("/register", (req, res) => {
     const templateVars = {
       user: null,
       error: "Error, email or password cannot be empty"
-    }
+    };
     return res.status(400).render("error", templateVars);
   }
   for (const user in users) {
@@ -283,7 +283,7 @@ app.post("/register", (req, res) => {
       const templateVars = {
         user: null,
         error: "Error, this email has already been registered"
-      }
+      };
       return res.status(400).render("error", templateVars);
     }
   }
