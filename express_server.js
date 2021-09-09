@@ -124,6 +124,7 @@ app.get("/login", (req, res) => {
 // GET logout page
 // REDIRECT to login
 app.get("/logout", (req, res) => {
+  res.session = null;
   res.redirect("/login");
 });
 
@@ -134,7 +135,7 @@ app.get("/urls", (req, res) => {
   if (!userID) {
     const templateVars = {
       user: null,
-      error: "Sorry, you are not permitted to view this page."
+      error: "Sorry, to view this page you must register or login."
     };
     res.status(403).render("error", templateVars);
   } else {
@@ -153,7 +154,11 @@ app.get("/urls", (req, res) => {
 app.get("/urls/new", (req, res) => {
   const userID = req.session.user_id;
   if (!userID) {
-    res.redirect("/login");
+    const templateVars = {
+      user: null,
+      error: "Sorry, you must register or login to create new tiny URLs."
+    };
+    res.status(401).render("error", templateVars);
   } else {
     const templateVars = {
       user: users[userID]
@@ -199,7 +204,7 @@ app.get('/u/:shortURL', (req, res) => {
   if (!urlDatabase[req.params.shortURL]) {
     const templateVars = {
       user: null,
-      error: "Error, this short URL does not exist."
+      error: "Error, this tiny URL does not exist."
     };
     return res.status(404).render("error", templateVars);
   }
@@ -241,7 +246,7 @@ app.post("/login", (req, res) => {
 // REDIRECT to login page
 app.post("/logout", (req, res) => {
   res.session = null;
-  res.redirect('/login');
+  res.redirect('/');
 });
 
 // POST request to submit registration form\
