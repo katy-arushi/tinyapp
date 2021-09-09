@@ -1,11 +1,11 @@
-// -------------------- DEPENDENCIES -------------------- //
+// ------------------------------ DEPENDENCIES -------------------------------- //
 const express = require('express');
 const app = express();
 const bodyParser = require('body-parser');
 const cookieSession = require('cookie-session')
 const bcrypt = require('bcrypt');
 
-// -------------------- MIDDLEWARE -------------------- //
+// -------------------------------- MIDDLEWARE -------------------------------- //
 app.set("view engine", "ejs");
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(
@@ -15,7 +15,7 @@ app.use(
   })
 );
 
-//  ------------------------ PORT ---------------------- //
+//  --------------------------------- PORT --------------------------------- //
 const PORT = 8080;
 app.listen(PORT, () => {
   console.log(`TinyApp server running on PORT ${PORT}!`);
@@ -57,7 +57,7 @@ const urlsForUser = function(id, databaseObject) {
   return userSpecificDatabase;
 }
 
-// -------------------- DATABASE OBJECTS -------------------- //
+// ----------------------------------- DATABASE OBJECTS -------------------------------- //
 
 // Database object to store all urls
 const urlDatabase = {
@@ -84,7 +84,7 @@ let users = {
   }
 };
 
-// -------------------------- GET ROUTE HANDLERS ---------------------------- //
+// -------------------------------------- GET ROUTE HANDLERS -------------------------------------- //
 
 // GET home page - display welcome message
 app.get("/", (req, res) => {
@@ -122,17 +122,19 @@ app.get("/login", (req, res) => {
 });
 
 // GET logout page
+// REDIRECT to login
 app.get("/logout", (req, res) => {
   res.redirect("/login");
 });
 
 // GET all URLs that have been shortened, in database obj
+// ERROR if no user is logged in
 app.get("/urls", (req, res) => {
   const userID = req.session.user_id;
   if (!userID) {
     const templateVars = {
       user: null,
-      error: "Sorry, you are not permitted to view this page"
+      error: "Sorry, you are not permitted to view this page."
     };
     res.status(403).render("error", templateVars);
   } else {
@@ -147,6 +149,7 @@ app.get("/urls", (req, res) => {
 });
 
 // GET input form to submit a new URL
+// REDIRECT to login page if no user is logged in (check cookie to determine login status)
 app.get("/urls/new", (req, res) => {
   const userID = req.session.user_id;
   if (!userID) {
@@ -160,16 +163,18 @@ app.get("/urls/new", (req, res) => {
 });
 
 // GET page for a shortened URL
+// ERROR if no user is logged in
+// ERROR if user tries to view a URL that is not linked to their userID
 app.get("/urls/:shortURL", (req, res) => {
   const userID = req.session.user_id;
   const shortURL = req.params.shortURL;
-  if (!userID) {
+  if (!userID) { // if no user is logged in
     const templateVars = {
       user: null,
-      error: "Sorry, this URL is not registered to your account."
+      error: "Sorry, you must login to view this URL."
     };
-    res.status(403).render("error", templateVars);
-  } else if (userID === urlDatabase[shortURL].userID) {
+    res.status(401).render("error", templateVars);
+  } else if (userID === urlDatabase[shortURL].userID) { // if URL belongs to the current user (checked via cookie) 
     const templateVars = {
       shortURL: req.params.shortURL,
       longURL: urlDatabase[req.params.shortURL].longURL,
@@ -187,6 +192,8 @@ app.get("/urls/:shortURL", (req, res) => {
 });
 
 // GET redirect short URLs to long URLs
+// ERROR if no short URL exists
+// REDIRECT to long url
 app.get('/u/:shortURL', (req, res) => {
   const longURL = urlDatabase[req.params.shortURL].longURL;
   if (!urlDatabase[req.params.shortURL]) {
@@ -200,9 +207,10 @@ app.get('/u/:shortURL', (req, res) => {
 });
 
 
-// -------------------- POST ROUTE HANDLERS -------------------- //
+// ------------------------------------ POST ROUTE HANDLERS --------------------------------------- //
 
-// POST form to add URL - post data and redirect to URLs home
+// POST form to add URL - post data
+// REDIRECT to short URL page
 app.post("/urls", (req, res) => {
   const shortURL = generateRandomString();
   const longURL = req.body.longURL;
@@ -211,6 +219,8 @@ app.post("/urls", (req, res) => {
 });
 
 // POST request to login
+// ERROR if user authentication failed
+// REDIRECT to urls page
 app.post("/login", (req, res) => {
   const email = req.body.email;
   const password = req.body.password; // password that is entered to the login form
@@ -223,17 +233,21 @@ app.post("/login", (req, res) => {
       user: null,
       error: "Error, login failed. Make sure your email and password are correct."
     }
-    res.status(403).render("error", templateVars);
+    res.status(401).render("error", templateVars);
   }
 });
 
 // POST request to logout
+// REDIRECT to login page
 app.post("/logout", (req, res) => {
   res.session = null;
-  res.redirect('/urls');
+  res.redirect('/login');
 });
 
-// POST request to submit registration form
+// POST request to submit registration form\
+// ERROR if password or email field are left empty when registering
+// ERROR if user tries to register with an email that has already been registered
+// REDIRECT to urls page
 app.post("/register", (req, res) => {
   const id = generateRandomString();
   const email = req.body.email;
@@ -265,6 +279,8 @@ app.post("/register", (req, res) => {
 });
 
 // POST request to edit URL
+// ERROR if user tries to edit a URL that is not linked to their userID
+// REDIRECT to urls page
 app.post("/urls/:shortURL/edit", (req, res) => {
   const shortURL = req.params.shortURL;
   const longURL = req.body.longURL;
@@ -283,6 +299,7 @@ app.post("/urls/:shortURL/edit", (req, res) => {
 });
 
 // POST request to delete a URL
+// ERROR if user tries to edit a URL that is not linked to their userID
 app.post("/urls/:shortURL/delete", (req, res) => {
   const shortURL = req.params.shortURL;
   const userID = req.session.user_id;
