@@ -79,8 +79,8 @@ const urlDatabase = {
 let users = {
   "aJ48lW": {
     id: "aJ48lW",
-    email: "arushi@email",
-    password: "1234"
+    email: "arushi@email.com",
+    password: "$2b$10$MMcQpI/ACDWru7PFg0.zU.3tIkhnqswR0harhFXKktqvPYwoObk0m" //password is 1234
   }
 };
 
@@ -88,7 +88,7 @@ let users = {
 
 // GET home page - display welcome message
 app.get("/", (req, res) => {
-  res.session = null;
+  req.session = null;
   const templateVars = {
     user: null,
     welcomeMessage: "Welcome to TinyApp! Please register or login to begin using TinyApp."
@@ -122,13 +122,6 @@ app.get("/login", (req, res) => {
   res.render("login", templateVars);
 });
 
-// // GET logout page
-// // REDIRECT to login
-// app.get("/logout", (req, res) => {
-//   res.session = null;
-//   req.session.destroy();
-//   res.redirect("/login");
-// });
 
 // GET all URLs that have been shortened, in database obj
 // ERROR if no user is logged in
@@ -227,7 +220,8 @@ app.get('/u/:shortURL', (req, res) => {
 // POST form to add URL - post data
 // REDIRECT to short URL page
 app.post("/urls", (req, res) => {
-  if (!req.session.userID) {
+  const userID = req.session.user_id;
+  if (!userID) {
     return res.redirect("/login");
   }
   const shortURL = generateRandomString();
@@ -258,7 +252,7 @@ app.post("/login", (req, res) => {
 // POST request to logout
 // REDIRECT to login page
 app.post("/logout", (req, res) => {
-  res.session = null;
+  req.session = null;
   res.redirect('/');
 });
 
