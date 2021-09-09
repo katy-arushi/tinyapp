@@ -20,7 +20,7 @@
   <div>
     <div class="card-body">
       <label class="form-inline justify-content-center" for="longURL">Edit URL:</label>
-      <form class="form-inline justify-content-center" method="POST" action="/urls/<%= shortURL %>">
+      <form class="form-inline justify-content-center" method="POST" action="/urls/<%=shortURL%>/edit">
         <input class="form-control" type="text" name="longURL" placeholder="http://" style="width: 300px; margin: 1em">
         <button type="submit" class="btn btn-primary">Edit and Submit URL</button>
       </form>

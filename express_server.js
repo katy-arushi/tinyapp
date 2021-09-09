@@ -2,13 +2,18 @@
 const express = require('express');
 const app = express();
 const bodyParser = require('body-parser');
-const cookieParser = require('cookie-parser');
+const cookieSession = require('cookie-session')
 const bcrypt = require('bcrypt');
 
 // -------------------- MIDDLEWARE -------------------- //
 app.set("view engine", "ejs");
 app.use(bodyParser.urlencoded({extended: true}));
-app.use(cookieParser());
+app.use(
+  cookieSession({
+    name: "session",
+    keys: ["key1", "key2"],
+  })
+);
 
 //  ------------------------ PORT ---------------------- //
 const PORT = 8080;
@@ -79,12 +84,15 @@ let users = {
   }
 };
 
+// -------------------------- GET ROUTE HANDLERS ---------------------------- //
 
-// -------------------- GET ROUTE HANDLERS -------------------- //
-
-// GET home page
+// GET home page - display welcome message
 app.get("/", (req, res) => {
-  res.send("<html><h1>Hello! Welcome to the TinyApp URL Shortening Service!</h1></html>");
+  const templateVars = {
+    user: null,
+    welcomeMessage: "Welcome to TinyApp! Please register or login to begin using TinyApp."
+  }
+  res.render("home", templateVars);
 });
 
 // show all URLs stored in database
@@ -100,8 +108,7 @@ app.get("/users.json", (req, res) => {
 // GET register page
 app.get("/register", (req, res) => {
   const templateVars = {
-    userID: req.cookies["user_id"],
-    user: users[req.cookies['user_id']]
+    user: users[req.session.user_id]
   };
   res.render("register", templateVars);
 });
@@ -109,8 +116,7 @@ app.get("/register", (req, res) => {
 // GET login page
 app.get("/login", (req, res) => {
   const templateVars = {
-    userID: null,
-    user: users[req.cookies['user_id']]
+    user: users[req.session.user_id]
   };
   res.render("login", templateVars);
 });
@@ -122,17 +128,18 @@ app.get("/logout", (req, res) => {
 
 // GET all URLs that have been shortened, in database obj
 app.get("/urls", (req, res) => {
-  const userID = req.cookies['user_id'];
+  const userID = req.session.user_id;
   if (!userID) {
     const templateVars = {
-      user: null
+      user: null,
+      error: "Sorry, you are not permitted to view this page"
     };
-    res.render("login_register_prompt", templateVars); // create page that redirects to login or register page
+    res.status(403).render("error", templateVars);
   } else {
-    let userSpecificDatabase = urlsForUser(userID, urlDatabase);
+    const userSpecificDatabase = urlsForUser(userID, urlDatabase);
     const templateVars = {
       urls: userSpecificDatabase,
-      userID: req.cookies['user_id'],
+      userID: req.session.user_id,
       user: users[userID]
     };
     res.render("urls_index", templateVars);
@@ -141,7 +148,7 @@ app.get("/urls", (req, res) => {
 
 // GET input form to submit a new URL
 app.get("/urls/new", (req, res) => {
-  const userID = req.cookies['user_id'];
+  const userID = req.session.user_id;
   if (!userID) {
     res.redirect("/login");
   } else {
@@ -154,26 +161,28 @@ app.get("/urls/new", (req, res) => {
 
 // GET page for a shortened URL
 app.get("/urls/:shortURL", (req, res) => {
-  const userID = req.cookies['user_id'];
+  const userID = req.session.user_id;
   const shortURL = req.params.shortURL;
   if (!userID) {
     const templateVars = {
-      user: null
+      user: null,
+      error: "Sorry, this URL is not registered to your account."
     };
-    res.render("login_register_prompt", templateVars);
+    res.status(403).render("error", templateVars);
   } else if (userID === urlDatabase[shortURL].userID) {
     const templateVars = {
       shortURL: req.params.shortURL,
       longURL: urlDatabase[req.params.shortURL].longURL,
-      user: users[req.cookies['user_id']],
-      userID: req.cookies["user_id"]
+      userID: req.session.user_id,
+      user: users[req.session.user_id]
     };
     res.render("urls_show", templateVars);
   } else {
     const templateVars = {
-      user: null
+      user: null,
+      error: "Sorry, you are not permitted to view, edit, or delete this URL."
     };
-    res.render("url_edit_delete_prompt", templateVars);
+    res.status(403).render("error", templateVars);
   }
 });
 
@@ -181,7 +190,11 @@ app.get("/urls/:shortURL", (req, res) => {
 app.get('/u/:shortURL', (req, res) => {
   const longURL = urlDatabase[req.params.shortURL].longURL;
   if (!urlDatabase[req.params.shortURL]) {
-    return res.status(404).send("Error, please check your shortened URL");
+    const templateVars = {
+      user: null,
+      error: "Error, this short URL does not exist."
+    };
+    return res.status(404).render("error", templateVars);
   }
   res.redirect(longURL);
 });
@@ -193,7 +206,7 @@ app.get('/u/:shortURL', (req, res) => {
 app.post("/urls", (req, res) => {
   const shortURL = generateRandomString();
   const longURL = req.body.longURL;
-  urlDatabase[shortURL] = {longURL: longURL, userID: req.cookies["user_id"]};
+  urlDatabase[shortURL] = {longURL: longURL, userID: req.session.user_id};
   res.redirect(`/urls/${shortURL}`);
 });
 
@@ -201,19 +214,22 @@ app.post("/urls", (req, res) => {
 app.post("/login", (req, res) => {
   const email = req.body.email;
   const password = req.body.password; // password that is entered to the login form
-  const hashedPassword = bcrypt.hashSync(password, 10);
   const user = findUser(email, password);
   if (user) {
-    res.cookie('user_id', user.id);
+    req.session.user_id = user.id;
     res.redirect('/urls');
   } else {
-    res.status(403).send("Error, login failed");
+    const templateVars = {
+      user: null,
+      error: "Error, login failed. Make sure your email and password are correct."
+    }
+    res.status(403).render("error", templateVars);
   }
 });
 
 // POST request to logout
 app.post("/logout", (req, res) => {
-  res.clearCookie('user_id');
+  res.session = null;
   res.redirect('/urls');
 });
 
@@ -224,11 +240,19 @@ app.post("/register", (req, res) => {
   const password = req.body.password;
   const hashedPassword = bcrypt.hashSync(password, 10);
   if (email === '' || password === '') {
-    return res.status(400).send("Error, email or password cannot be empty");
+    const templateVars = {
+      user: null,
+      error: "Error, email or password cannot be empty"
+    }
+    return res.status(400).render("error", templateVars);
   }
   for (const user in users) {
     if (users[user].email === email) {
-      return res.status(400).send("Error, this email has already been registered");
+      const templateVars = {
+        user: null,
+        error: "Error, this email has already been registered"
+      }
+      return res.status(400).render("error", templateVars);
     }
   }
   users[id] = {
@@ -236,38 +260,40 @@ app.post("/register", (req, res) => {
     email,
     password: hashedPassword
   };
-  res.cookie('user_id', id);
+  req.session.user_id = id; // setting cookie
   res.redirect('/urls');
 });
 
 // POST request to edit URL
-app.post("/urls/:shortURL", (req, res) => {
+app.post("/urls/:shortURL/edit", (req, res) => {
   const shortURL = req.params.shortURL;
   const longURL = req.body.longURL;
-  const userID = req.cookies['user_id'];
+  const userID = req.session.user_id;
   // check if short URL belongs to the user (by checking userID)
   if ((urlDatabase[shortURL].userID) === userID) {
-    urlDatabase[shortURL] = {longURL: longURL, userID: req.cookies["user_id"]};
+    urlDatabase[shortURL] = {longURL: longURL, userID: req.session.user_id};
     res.redirect("/urls");
   } else {
     const templateVars = {
-      user: null
+      user: null,
+      error: "Sorry, you are not permitted to view, edit, or delete this URL."
     };
-    res.render("url_edit_delete_prompt", templateVars);
+    res.status(403).render("error", templateVars);
   }
 });
 
 // POST request to delete a URL
 app.post("/urls/:shortURL/delete", (req, res) => {
   const shortURL = req.params.shortURL;
-  const userID = req.cookies['user_id'];
+  const userID = req.session.user_id;
   if ((urlDatabase[shortURL].userID) === userID) {
     delete urlDatabase[shortURL];
     res.redirect("/urls");
   } else {
     const templateVars = {
-      user: null
+      user: null,
+      error: "Sorry, you are not permitted to view, edit, or delete this URL."
     };
-    res.render("url_edit_delete_prompt", templateVars);
+    res.status(403).render("error", templateVars);
   }
 });
