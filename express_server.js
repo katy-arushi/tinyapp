@@ -214,7 +214,7 @@ app.post("/login", (req, res) => {
     res.status(401).render("error", templateVars);
   }
   if (user) { // happy path. when user exists.
-    if (bcrypt.compareSync(password, user.password)) { // even happier path. when password is correct. login in the user!
+    if (bcrypt.compareSync(password, users[user].password)) { // even happier path. when password is correct. login in the user!
       req.session.user_id = user.id;
       res.redirect('/urls');
     } else { // case where user exists, but password is incorrect.

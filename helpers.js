@@ -13,10 +13,10 @@ const generateRandomString = function() {
 const getUserByEmail = function(email, userDatabase) {
   for (const user in userDatabase) {
     if (userDatabase[user].email === email) {
-      return userDatabase[user]; // returns user object
+      return user; // returns user object
     }
   }
-  return false; // case where email and password don't match or email doesn't exist
+  return undefined; // case where email and password don't match or email doesn't exist
 };
 
 // function to find all the user's shortURLs
