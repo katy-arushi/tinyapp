@@ -1,14 +1,13 @@
 // ------------------------------ DEPENDENCIES -------------------------------- //
 const express = require('express');
 const app = express();
-const bodyParser = require('body-parser');
 const cookieSession = require('cookie-session');
 const bcrypt = require('bcrypt');
 const { generateRandomString, getUserByEmail, urlsForUser } = require("./helpers");
 
 // -------------------------------- MIDDLEWARE -------------------------------- //
 app.set("view engine", "ejs");
-app.use(bodyParser.urlencoded({extended: true}));
+app.use(express.urlencoded({ extended: false }));
 app.use(
   cookieSession({
     name: "session",
@@ -248,7 +247,7 @@ app.post("/register", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
   const hashedPassword = bcrypt.hashSync(password, 10);
-  if (email === '' || password === '') {
+  if (!email || !password) {
     const templateVars = {
       user: null,
       error: "Error, email or password cannot be left empty."
