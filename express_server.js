@@ -97,7 +97,7 @@ app.get("/urls", (req, res) => {
       user: null,
       error: "Sorry, to view this page you must register or login."
     };
-    res.status(403).render("error", templateVars);
+    return res.status(403).render("error", templateVars);
   } else {
     const userSpecificDatabase = urlsForUser(userID, urlDatabase);
     const templateVars = {
@@ -118,7 +118,7 @@ app.get("/urls/new", (req, res) => {
       user: null,
       error: "Sorry, you must register or login to create new tiny URLs."
     };
-    res.status(401).render("error", templateVars);
+    return res.status(401).render("error", templateVars);
   } else {
     const templateVars = {
       userID: req.session.user_id,
@@ -139,14 +139,14 @@ app.get("/urls/:shortURL", (req, res) => {
       user: users[req.session.user_id],
       error: "Error, this tiny URL does not exist."
     };
-    res.status(404).render("error", templateVars);
+    return res.status(404).render("error", templateVars);
   }
   if (!userID) { // if no user is logged in
     const templateVars = {
       user: null,
       error: "Sorry, you must login to view this URL."
     };
-    res.status(401).render("error", templateVars);
+    return res.status(401).render("error", templateVars);
   } else if (userID === urlDatabase[shortURL].userID) { // if URL belongs to the current user (checked via cookie)
     const templateVars = {
       shortURL: req.params.shortURL,
@@ -160,7 +160,7 @@ app.get("/urls/:shortURL", (req, res) => {
       user: users[req.session.user_id],
       error: "Sorry, you are not permitted to view, edit, or delete this URL."
     };
-    res.status(403).render("error", templateVars);
+    return res.status(403).render("error", templateVars);
   }
 });
 
@@ -209,7 +209,7 @@ app.post("/login", (req, res) => {
       user: users[req.session.user_id],
       error: "Error, login failed. You have left a required field for login empty."
     };
-    res.status(401).render("error", templateVars);
+    return res.status(401).render("error", templateVars);
   }
   if (user) { // happy path. when user exists.
     if (bcrypt.compareSync(password, users[user].password)) { // even happier path. when password is correct. login in the user!
@@ -220,14 +220,14 @@ app.post("/login", (req, res) => {
         user: users[req.session.user_id],
         error: "Error, login failed. Password is incorrect."
       };
-      res.status(401).render("error", templateVars);
+      return res.status(401).render("error", templateVars);
     }
   } else if (!user) { // case where no user is found
     const templateVars = {
       user: users[req.session.user_id],
       error: "Error, login failed. No account exists."
     };
-    res.status(401).render("error", templateVars);
+    return res.status(401).render("error", templateVars);
   }
 });
 
@@ -289,7 +289,7 @@ app.post("/urls/:shortURL/edit", (req, res) => {
       user: users[req.session.user_id],
       error: "Sorry, you are not permitted to view, edit, or delete this URL."
     };
-    res.status(403).render("error", templateVars);
+    return res.status(403).render("error", templateVars);
   }
 });
 
@@ -306,6 +306,6 @@ app.post("/urls/:shortURL/delete", (req, res) => {
       user: users[req.session.user_id],
       error: "Sorry, you are not permitted to view, edit, or delete this URL."
     };
-    res.status(403).render("error", templateVars);
+    return res.status(403).render("error", templateVars);
   }
 });
